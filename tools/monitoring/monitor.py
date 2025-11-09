@@ -15,6 +15,7 @@ import pytz
 from models import Item
 from tools.processing.description import DescriptionSummarizer
 from tools.scraping.base import BaseScraper
+from tools.scraping.types import get_proper_scraper
 
 if TYPE_CHECKING:
     from clients.topn_db_client import TopnDbClient
@@ -82,12 +83,11 @@ class ItemMonitor:
     async def _persist_items(self, items: list[Item], source_url: str):
         poland_tz = pytz.timezone("Europe/Warsaw")
         for item in items:
-            if "otodom.pl" in item.item_url:
-                source = "Otodom"
-            elif "olx.pl" in item.item_url:
-                source = "OLX"
-            else:
-                source = "OLX"
+            # Use enum-based scraper detection for source
+            scraper_type = get_proper_scraper(item.item_url)
+            source = (
+                scraper_type.value.upper()
+            )  # Convert "olx" -> "OLX", "otodom" -> "OTODOM"
 
             item_data = {
                 "item_url": item.item_url,

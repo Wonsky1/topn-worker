@@ -7,6 +7,9 @@ class DummyScraper(BaseScraper):
     async def fetch_new_items(self, url, existing_urls, summarizer):  # pragma: no cover
         return []
 
+    async def fetch_item_details(self, item_url, summarizer):  # pragma: no cover
+        return "", ""
+
 
 class TestBaseScraper(IsolatedAsyncioTestCase):
     async def asyncSetUp(self):

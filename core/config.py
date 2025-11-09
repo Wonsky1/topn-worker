@@ -22,6 +22,9 @@ class Settings(BaseSettings):
 
     TOPN_DB_BASE_URL: str
 
+    # Logging Configuration
+    LOG_LEVEL: str = "INFO"
+
     # Model Configuration
     GROQ_API_KEY: Optional[str] = None
     GROQ_MODEL_NAME: Optional[str] = None
@@ -31,6 +34,20 @@ class Settings(BaseSettings):
     CYCLE_FREQUENCY_SECONDS: int = 10
 
     DEFAULT_LAST_MINUTES_GETTING: int = 45
+
+    @field_validator("LOG_LEVEL")
+    def validate_log_level(cls, value: str) -> str:
+        """Validate that LOG_LEVEL is a valid logging level."""
+        valid_levels = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
+        value_upper = value.upper()
+        if value_upper not in valid_levels:
+            logger.warning(
+                "Invalid LOG_LEVEL '%s', defaulting to INFO. Valid levels: %s",
+                value,
+                ", ".join(valid_levels),
+            )
+            return "INFO"
+        return value_upper
 
     @field_validator("GENERATIVE_MODEL")
     def generative_model(
