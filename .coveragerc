@@ -8,6 +8,7 @@ omit =
     */models/*
     */prompts/*
     */core/config.py
+    */core/logging_config.py
 
 branch = True
 

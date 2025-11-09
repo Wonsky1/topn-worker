@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 from enum import StrEnum
+from typing import TYPE_CHECKING, Dict, Type
 from urllib.parse import urlparse
+
+if TYPE_CHECKING:
+    from .base import BaseScraper
 
 
 class ScraperType(StrEnum):
@@ -31,3 +35,19 @@ def get_proper_scraper(url: str) -> ScraperType:
     else:
         # Default fallback to OLX
         return ScraperType.OLX
+
+
+def get_scraper_registry() -> Dict[ScraperType, Type["BaseScraper"]]:
+    """Get the scraper registry with lazy imports to avoid circular dependencies.
+
+    Returns:
+        Dictionary mapping ScraperType to scraper implementation classes.
+    """
+    # Import here to avoid circular imports
+    from .olx import OLXScraper
+    from .otodom import OtodomScraper
+
+    return {
+        ScraperType.OLX: OLXScraper,
+        ScraperType.OTODOM: OtodomScraper,
+    }

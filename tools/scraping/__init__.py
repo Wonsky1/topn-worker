@@ -1,14 +1,16 @@
 """Scraping module with marketplace-specific scrapers."""
 
-from typing import Dict, Type
-
 from .base import BaseScraper
-from .olx import OLXScraper
-from .otodom import OtodomScraper
-from .types import ScraperType, get_proper_scraper
+from .types import ScraperType, get_proper_scraper, get_scraper_registry
 
-# Registry mapping scraper types to their implementation classes
-SCRAPER_REGISTRY: Dict[ScraperType, Type[BaseScraper]] = {
-    ScraperType.OLX: OLXScraper,
-    ScraperType.OTODOM: OtodomScraper,
-}
+
+# For backward compatibility, provide SCRAPER_REGISTRY as a function call
+# This avoids circular import issues
+def _get_registry():
+    """Lazy-load the scraper registry."""
+    return get_scraper_registry()
+
+
+# Note: SCRAPER_REGISTRY is now a function call to avoid circular imports
+# Use get_scraper_registry() instead, or call SCRAPER_REGISTRY() if you need the dict
+SCRAPER_REGISTRY = _get_registry

@@ -13,11 +13,10 @@ from bs4 import BeautifulSoup
 
 from models import Item
 from tools.processing.description import DescriptionSummarizer
-from tools.scraping import SCRAPER_REGISTRY
 from tools.utils.time_helpers import TimeUtils
 
 from .base import BaseScraper
-from .types import ScraperType, get_proper_scraper
+from .types import ScraperType, get_proper_scraper, get_scraper_registry
 
 logger = logging.getLogger(__name__)
 
@@ -129,8 +128,9 @@ class OLXScraper(BaseScraper):
             Instance of the requested scraper.
         """
         if scraper_type not in self._detail_fetchers:
-            # Import here to avoid circular imports
-            scraper_cls = SCRAPER_REGISTRY[scraper_type]
+            # Get registry and instantiate the appropriate scraper
+            registry = get_scraper_registry()
+            scraper_cls = registry[scraper_type]
             self._detail_fetchers[scraper_type] = scraper_cls()
         return self._detail_fetchers[scraper_type]
 
