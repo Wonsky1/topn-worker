@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import re
 from datetime import datetime
-from typing import List, Set
+from typing import Dict, List, Set
 
 import httpx
 import pytz
@@ -16,6 +16,7 @@ from tools.processing.description import DescriptionSummarizer
 from tools.utils.time_helpers import TimeUtils
 
 from .base import BaseScraper
+from .types import ScraperType, get_proper_scraper, get_scraper_registry
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,7 @@ class OLXScraper(BaseScraper):
         self.client = httpx.AsyncClient(
             headers=self.HEADERS, timeout=10, follow_redirects=True
         )
+        self._detail_fetchers: Dict[ScraperType, BaseScraper] = {}
 
     async def fetch_new_items(
         self,
@@ -116,19 +118,59 @@ class OLXScraper(BaseScraper):
         )
         return new_items
 
+    def _get_detail_fetcher(self, scraper_type: ScraperType) -> BaseScraper:
+        """Lazy-load detail fetchers on demand.
+
+        Args:
+            scraper_type: Type of scraper to get.
+
+        Returns:
+            Instance of the requested scraper.
+        """
+        if scraper_type not in self._detail_fetchers:
+            # Get registry and instantiate the appropriate scraper
+            registry = get_scraper_registry()
+            scraper_cls = registry[scraper_type]
+            self._detail_fetchers[scraper_type] = scraper_cls()
+        return self._detail_fetchers[scraper_type]
+
     async def _fetch_item_details(
         self, item_url: str, summarizer: DescriptionSummarizer
     ):
-        if "otodom" in item_url:
-            return "Otodom link will be implemented soon", ""
+        """Internal method to fetch item details with delegation support."""
+        scraper_type = get_proper_scraper(item_url)
 
+        if scraper_type != ScraperType.OLX:
+            # Delegate to appropriate scraper
+            fetcher = self._get_detail_fetcher(scraper_type)
+            return await fetcher.fetch_item_details(item_url, summarizer)
+
+        # Use OLX-specific implementation
+        return await self.fetch_item_details(item_url, summarizer)
+
+    async def fetch_item_details(
+        self, item_url: str, summarizer: DescriptionSummarizer
+    ) -> tuple[str, str]:
+        """Fetch description and image for a single OLX item.
+
+        This implements the BaseScraper abstract method for OLX-specific logic.
+
+        Args:
+            item_url: URL of the OLX listing.
+            summarizer: Description summarizer (currently unused, TODO).
+
+        Returns:
+            tuple[description, highres_image_url]
+        """
         try:
             response = await self.client.get(item_url)
             soup = BeautifulSoup(response.text, "html.parser")
 
             raw_desc = self._extract_description(soup)
-            summary = await summarizer.summarize(raw_desc)
-            description = summary or raw_desc[:500]
+            # TODO: implement description summarization later
+            # summary = await summarizer.summarize(raw_desc)
+            # description = summary or raw_desc[:500]
+            description = raw_desc[:500]
 
             highres = self._extract_highres_image(soup)
             return description, highres
@@ -187,4 +229,7 @@ class OLXScraper(BaseScraper):
 
     async def close(self):
         await self.client.aclose()
+        # Close all delegated scrapers
+        for fetcher in self._detail_fetchers.values():
+            await fetcher.close()
         await super().close()

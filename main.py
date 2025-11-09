@@ -1,20 +1,20 @@
 import asyncio
 import logging
-import sys
 
 from clients import close_client, topn_db_client
 from core.config import settings
+from core.logging_config import setup_logging
 from tools.monitoring.monitor import ItemMonitor
 from tools.scraping.olx import OLXScraper
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        # logging.FileHandler('olx_worker.log')
-    ],
+# Initialize logging system
+setup_logging(
+    log_level=settings.LOG_LEVEL,
+    log_filename="topn_worker.log",
+    rotation_when="midnight",
+    rotation_interval=1,
+    backup_count=30,
+    console_output=True,
 )
 
 logger = logging.getLogger(__name__)
