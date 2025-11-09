@@ -130,7 +130,7 @@ class TestItemMonitor(IsolatedAsyncioTestCase):
             for call in self.db.create_item.await_args_list
         ]
         self.assertEqual(
-            [p["source"] for p in payloads], ["Otodom", "OLX", "OLX"]
+            [p["source"] for p in payloads], ["OTODOM", "OLX", "OLX"]
         )  # default fallback is OLX
         self.assertEqual([p["source_url"] for p in payloads], ["SRC", "SRC", "SRC"])
 
